@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>August Map Challenge 2023</title>
+  <!--Including leaflet in the application. Always load CSS file before JS file-->
+  <link rel="stylesheet" href="leaflet/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="leaflet/leaflet.js"></script>
+  <script src="FGM_prevelance.js"></script>
+
+</head>
+
+<body>
+  <!--Creating the map container and is always a <div>-->
+  <div id="map"></div>
+
+  <!--Script files goes at the bottom of the body section-->
+  <script>
+    var map = L.map('map', {
+      center: [-5.78, 34.72],
+      zoom: 6
+    });
+
+    // adding basemap to the map OTHER MAPS
+    var basemap = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+    });
+    basemap.addTo(map);
+
+    // adding prevelance layer to the map
+    L.geoJson(FGM_prevelance).addTo(map);
+
+    // get color depending on prevelance value
+    function getColor(d) {
+      return d > 46.7 ? '#67000d' :
+        d > 32 ? '#d32020' :
+          d > 13.7 ? '#fb7050' :
+            d > 1.6 ? '#ffaa89' :
+              d > 0 ? '#fce4d8' :
+                '#fce4d8';
+    }
+
+    // styling function for our GeoJSON layer, fillColor depends on feature.properties.PERCENTAGE property
+    function style(feature) {
+      return {
+        fillColor: getColor(feature.properties.PERCENTAGE),
+        weight: 1.5,
+        opacity: 1,
+        color: 'grey',
+        dashArray: '4',
+        fillOpacity: 1.0
+      };
+    }
+
+    L.geoJson(FGM_prevelance, { style: style }).addTo(map);
+
+    // the states highlighted visually when they are hovered with a mouse, defining an event listener for layer mouseover event
+    function highlightFeature(e) {
+      var layer = e.target;
+
+      layer.setStyle({
+        weight: 3,
+        color: '#666',
+        dashArray: '',
+        fillOpacity: 0.9
+      });
+
+      layer.bringToFront();
+
+      info.update(layer.feature.properties);
+    }
+
+
+    // defining what happens on mouseout
+    function resetHighlight(e) {
+      geojson.resetStyle(e.target);
+      info.update();
+    }
+
+    //geojson.resetStyle method will reset the layer style to its default state
+    var geojson;
+    // our listeners
+    geojson = L.geoJson(FGM_prevelance);
+
+
+    // defining a click listener that zooms to the state
+    function zoomToFeature(e) {
+      map.fitBounds(e.target.getBounds());
+    }
+
+    // onEachFeature option to add the listeners on our state layers
+    function onEachFeature(feature, layer) {
+      layer.on({
+        mouseover: highlightFeature,
+        mouseout: resetHighlight,
+        click: zoomToFeature
+      });
+    }
+
+    geojson = L.geoJson(FGM_prevelance, {
+      style: style,
+      onEachFeature: onEachFeature
+    }).addTo(map);
+
+
+    // custom info control
+    var info = L.control();
+
+    info.onAdd = function (map) {
+      this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+      this.update();
+      return this._div;
+    };
+
+    // method that we will use to update the control based on feature properties passed
+    info.update = function (props) {
+      this._div.innerHTML = '<h2>FGM Prevelance in Tanzania</h2>' + (props ?
+        '<b>' + props.REGION + '</b><br />' + props.PERCENTAGE + '%'
+        : 'Hover over a region');
+    };
+
+    info.addTo(map);
+
+
+    //custom legend control
+    var legend = L.control({ position: 'bottomright' });
+
+    legend.onAdd = function (map) {
+
+      var div = L.DomUtil.create('div', 'info legend'),
+        grades = [0, 1.6, 13.7, 32, 46.7],
+        labels = [];
+
+      // loop through our density intervals and generate a label with a colored square for each interval
+      for (var i = 0; i < grades.length; i++) {
+        div.innerHTML +=
+          '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
+          grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+      }
+
+      return div;
+    };
+
+    legend.addTo(map);
+
+  </script>
+
+</body>
+
+</html>
