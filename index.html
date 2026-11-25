@@ -76,19 +76,18 @@
     }
 
 
-    // defining what happens on mouseout
+    // defining what happens on mouseout, geojson.resetStyle method will reset the layer style to its default state
     function resetHighlight(e) {
       geojson.resetStyle(e.target);
       info.update();
     }
 
-    //geojson.resetStyle method will reset the layer style to its default state
     var geojson;
     // our listeners
     geojson = L.geoJson(FGM_prevelance);
 
 
-    // defining a click listener that zooms to the state
+    // Zoom to the extent of the GeoJSON layer
     function zoomToFeature(e) {
       map.fitBounds(e.target.getBounds());
     }
